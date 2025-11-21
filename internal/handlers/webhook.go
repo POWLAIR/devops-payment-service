@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"log"
 	"payment-service/internal/database"
 	"payment-service/internal/models"
@@ -42,7 +43,7 @@ func StripeWebhook(c *fiber.Ctx) error {
 // handlePaymentSucceeded traite un paiement réussi
 func handlePaymentSucceeded(event stripe.Event) error {
 	var paymentIntent stripe.PaymentIntent
-	if err := event.Data.Object.UnmarshalJSON(&paymentIntent); err != nil {
+	if err := json.Unmarshal(event.Data.Raw, &paymentIntent); err != nil {
 		log.Printf("❌ Error parsing webhook JSON: %v", err)
 		return err
 	}
@@ -66,7 +67,7 @@ func handlePaymentSucceeded(event stripe.Event) error {
 // handlePaymentFailed traite un paiement échoué
 func handlePaymentFailed(event stripe.Event) error {
 	var paymentIntent stripe.PaymentIntent
-	if err := event.Data.Object.UnmarshalJSON(&paymentIntent); err != nil {
+	if err := json.Unmarshal(event.Data.Raw, &paymentIntent); err != nil {
 		return err
 	}
 
@@ -88,7 +89,7 @@ func handlePaymentFailed(event stripe.Event) error {
 // handlePaymentCanceled traite un paiement annulé
 func handlePaymentCanceled(event stripe.Event) error {
 	var paymentIntent stripe.PaymentIntent
-	if err := event.Data.Object.UnmarshalJSON(&paymentIntent); err != nil {
+	if err := json.Unmarshal(event.Data.Raw, &paymentIntent); err != nil {
 		return err
 	}
 
