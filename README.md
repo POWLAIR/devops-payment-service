@@ -1,85 +1,27 @@
 # Payment Service (Go)
 
-Service de gestion des paiements avec Stripe pour la plateforme SaaS multi-tenant.
+Service de paiement en Go avec Stripe, GORM et PostgreSQL.
 
-## Description
+## 🚀 Technologies
 
-Le Payment Service gère :
-- Création de Payment Intents (Stripe)
-- Stripe Connect pour multi-merchant
-- Webhooks Stripe (goroutines pour performance)
-- Commission automatique (5%)
-- Remboursements
-- Historique des paiements
+- **Go 1.21+** - Performance et concurrence
+- **Fiber v2** - Framework HTTP rapide
+- **GORM** - ORM pour PostgreSQL
+- **Stripe SDK Go** - Intégration paiements
+- **JWT** - Authentification
+- **PostgreSQL** - Base de données
 
-## Technologies
+## 📁 Structure
 
-- **Langage** : Go 1.21+
-- **Framework** : Fiber (Express-like pour Go)
-- **Base de données** : PostgreSQL
-- **ORM** : GORM
-- **Payment Provider** : Stripe (stripe-go SDK officiel)
-- **Port** : 5000
-
-## Pourquoi Go ?
-
-✅ **Performance critique** : Paiements nécessitent haute concurrence  
-✅ **Goroutines** : Gestion native des webhooks simultanés  
-✅ **Binaire léger** : ~15MB (vs ~150MB Node.js)  
-✅ **Stripe SDK Go** : Très mature et performant  
-✅ **Type safety** : Compilation stricte, moins d'erreurs runtime  
-
-## Installation
-
-```bash
-# Installer les dépendances
-go mod download
-
-# Copier .env
-cp .env.example .env
-
-# Lancer en mode dev
-go run cmd/api/main.go
-
-# Build production
-go build -o payment-service cmd/api/main.go
-```
-
-## Variables d'environnement
-
-```env
-# Server
-PORT=5000
-HOST=0.0.0.0
-ENV=development
-
-# Database
-DB_HOST=postgres
-DB_PORT=5432
-DB_USER=saas_admin
-DB_PASSWORD=dev_password
-DB_NAME=saas_platform
-
-# JWT (doit correspondre à auth-service)
-JWT_SECRET=dev-secret-key-change-in-production
-
-# Stripe
-STRIPE_SECRET_KEY=sk_test_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
-PLATFORM_COMMISSION_RATE=5
-```
-
-## Structure du projet
-
-```
+```text
 payment-service/
 ├── cmd/
 │   └── api/
 │       └── main.go              # Entry point
 ├── internal/
 │   ├── handlers/                # HTTP handlers
-│   │   ├── payment.go
-│   │   └── webhook.go
+│   │   ├── payment.go           # Routes paiement
+│   │   └── webhook.go           # Webhooks Stripe
 │   ├── models/                  # GORM models
 │   │   └── payment.go
 │   ├── database/                # DB connection
@@ -89,82 +31,96 @@ payment-service/
 │   └── middleware/              # JWT, tenant
 │       ├── auth.go
 │       └── tenant.go
-├── pkg/
-│   └── config/                  # Configuration
-│       └── config.go
 ├── go.mod
 ├── go.sum
 ├── Dockerfile
 └── README.md
 ```
 
-## Endpoints API
+## 🔧 Configuration
 
-### POST /payments/create-intent
-Créer un Payment Intent
+Créer un fichier `.env` :
 
-**Request:**
-```json
-{
-  "amount": 100.00,
-  "currency": "eur",
-  "orderId": "uuid",
-  "metadata": {}
-}
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=saas_admin
+DB_PASSWORD=your_password
+DB_NAME=saas_platform
+
+STRIPE_SECRET_KEY=sk_test_xxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxx
+
+JWT_SECRET=your_jwt_secret
+PORT=5000
+CORS_ORIGINS=http://localhost:3001
 ```
 
-**Response:**
-```json
-{
-  "clientSecret": "pi_xxx_secret_xxx",
-  "paymentId": "uuid"
-}
+## 🏃 Lancer en développement
+
+```bash
+# Installer les dépendances
+go mod download
+
+# Lancer le serveur
+go run cmd/api/main.go
 ```
 
-### GET /payments
-Liste des paiements (par tenant)
+## 🐳 Docker
 
-### GET /payments/:id
-Détail d'un paiement
+```bash
+# Build
+docker build -t payment-service .
 
-### POST /webhooks/stripe
-Webhook Stripe (signature vérifiée)
+# Run
+docker run -p 5000:5000 --env-file .env payment-service
+```
 
-## Performance
+## 📡 API Endpoints
 
-**Benchmarks :**
-- Latence moyenne : ~5ms (vs ~50ms Node.js)
-- Throughput : 10K req/s (vs 2K req/s Node.js)
-- Mémoire : 20MB (vs 150MB Node.js)
-- Cold start : instant (binaire compilé)
+### Paiements (nécessite JWT + Tenant ID)
 
-## Tests
+- `POST /api/v1/payments/create-intent` - Créer un Payment Intent
+- `GET /api/v1/payments` - Liste des paiements
+- `GET /api/v1/payments/:id` - Détail d'un paiement
+
+### Webhooks (public, signature Stripe)
+
+- `POST /api/v1/webhooks/stripe` - Webhook Stripe
+
+## 🧪 Tests
 
 ```bash
 # Tests unitaires
 go test ./...
 
-# Tests avec coverage
+# Coverage
 go test -cover ./...
 
 # Benchmark
 go test -bench=. ./...
 ```
 
-## Docker
+## 📊 Fonctionnalités
 
-```bash
-# Build
-docker build -t payment-service:latest .
+✅ Création de Payment Intent Stripe  
+✅ Commission plateforme automatique (5%)  
+✅ Webhooks Stripe (succeeded, failed, canceled)  
+✅ Multi-tenant avec isolation par tenant_id  
+✅ Authentification JWT  
+✅ GORM + PostgreSQL  
+✅ Healthcheck
 
-# Run
-docker run -p 5000:5000 --env-file .env payment-service:latest
-```
+## 🔐 Sécurité
 
-## Documentation
+- JWT pour authentification
+- Validation signature webhooks Stripe
+- Isolation multi-tenant stricte
+- Variables d'environnement pour secrets
 
-Voir [Phase 2](../transform/phase-2-nouveaux-services.md) pour l'implémentation complète.
+## 📈 Performance
 
-## License
-
-MIT
+- **Latence** : ~5ms
+- **Throughput** : 10K req/s
+- **Mémoire** : ~20MB
+- **Binaire** : ~15MB
