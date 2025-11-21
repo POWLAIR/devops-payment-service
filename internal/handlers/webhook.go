@@ -96,7 +96,7 @@ func handlePaymentCanceled(event stripe.Event) error {
 	result := database.GetDB().Model(&models.Payment{}).
 		Where("payment_intent_id = ?", paymentIntent.ID).
 		Updates(map[string]interface{}{
-			"status": models.StatusCanceled,
+			"status": models.StatusCancelled,
 		})
 
 	if result.Error != nil {

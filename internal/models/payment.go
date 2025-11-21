@@ -14,7 +14,7 @@ type Payment struct {
 	PaymentIntentID     string    `gorm:"unique;not null" json:"payment_intent_id"`
 	Amount              float64   `gorm:"not null" json:"amount"`
 	Currency            string    `gorm:"default:eur" json:"currency"`
-	Status              string    `gorm:"default:pending" json:"status"`
+	Status              string    `gorm:"type:payment_status_enum;default:pending" json:"status"`
 	PlatformCommission  float64   `json:"platform_commission"`
 	StripeAccountID     string    `json:"stripe_account_id,omitempty"`
 	Metadata            string    `gorm:"type:jsonb" json:"metadata,omitempty"`
@@ -32,9 +32,11 @@ func (p *Payment) BeforeCreate(tx *gorm.DB) error {
 
 // PaymentStatus constants
 const (
-	StatusPending   = "pending"
-	StatusSucceeded = "succeeded"
-	StatusFailed    = "failed"
-	StatusCanceled  = "canceled"
+	StatusPending    = "pending"
+	StatusProcessing = "processing"
+	StatusSucceeded  = "succeeded"
+	StatusFailed     = "failed"
+	StatusRefunded   = "refunded"
+	StatusCancelled  = "cancelled"
 )
 
