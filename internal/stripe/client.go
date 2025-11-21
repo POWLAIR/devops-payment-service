@@ -38,3 +38,5 @@ func GetPaymentIntent(id string) (*stripe.PaymentIntent, error) {
 	return paymentintent.Get(id, nil)
 }
 
+
+
