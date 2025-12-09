@@ -19,7 +19,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o payment-service c
 # Final stage
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
+# Ajout de wget pour le healthcheck et certificats
+RUN apk --no-cache add ca-certificates wget
 
 WORKDIR /root/
 

@@ -38,6 +38,24 @@ func Connect() error {
 
 // AutoMigrate exécute les migrations
 func AutoMigrate() error {
+	// Vérifier si l'enum existe déjà
+	checkEnumSQL := `SELECT EXISTS (
+		SELECT 1 FROM pg_type WHERE typname = 'payment_status_enum'
+	)`
+	var enumExists bool
+	if err := DB.Raw(checkEnumSQL).Scan(&enumExists).Error; err != nil {
+		return fmt.Errorf("failed to check enum type: %w", err)
+	}
+
+	// Créer le type enum s'il n'existe pas
+	if !enumExists {
+		createEnumSQL := `CREATE TYPE payment_status_enum AS ENUM ('pending', 'processing', 'succeeded', 'failed', 'refunded', 'cancelled')`
+		if err := DB.Exec(createEnumSQL).Error; err != nil {
+			return fmt.Errorf("failed to create enum type: %w", err)
+		}
+		log.Println("✅ Created payment_status_enum type")
+	}
+
 	if err := DB.AutoMigrate(&models.Payment{}); err != nil {
 		return fmt.Errorf("failed to migrate: %w", err)
 	}
