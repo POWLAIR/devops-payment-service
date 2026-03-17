@@ -37,6 +37,9 @@ func CreatePaymentIntent(c *fiber.Ctx) error {
 		})
 	}
 
+	userID, _ := c.Locals("user_id").(string)
+	userEmail, _ := c.Locals("user_email").(string)
+
 	// Calculer la commission (5%)
 	commission := req.Amount * 0.05
 
@@ -53,6 +56,8 @@ func CreatePaymentIntent(c *fiber.Ctx) error {
 	payment := models.Payment{
 		TenantID:           tenantID,
 		OrderID:            req.OrderID,
+		UserID:             userID,
+		UserEmail:          userEmail,
 		PaymentIntentID:    pi.ID,
 		Amount:             req.Amount,
 		Currency:           req.Currency,

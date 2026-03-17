@@ -45,6 +45,7 @@ func JWTAuth() fiber.Handler {
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
 			c.Locals("user_id", claims["sub"])
 			c.Locals("tenant_id", claims["tenant_id"])
+			c.Locals("user_email", claims["email"])
 		}
 
 		return c.Next()

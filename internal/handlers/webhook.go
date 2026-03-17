@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -81,18 +80,11 @@ func handlePaymentSucceeded(event stripe.Event) error {
 		}
 	}()
 
-	// Récupérer les détails de la commande depuis order-service
-	orderDetails, err := getOrderDetails(payment.OrderID)
-	if err != nil {
-		log.Printf("⚠️ Failed to get order details: %v", err)
-		return nil // Ne pas bloquer le traitement du webhook
-	}
-
-	// Récupérer l'email de l'utilisateur depuis auth-service
-	userEmail, err := getUserEmail(orderDetails.UserID, payment.TenantID)
-	if err != nil {
-		log.Printf("⚠️ Failed to get user email: %v", err)
-		userEmail = "customer@example.com" // Fallback
+	// Récupérer l'email stocké à la création du paiement
+	userEmail := payment.UserEmail
+	if userEmail == "" {
+		log.Printf("⚠️ No user email stored on payment %s, skipping confirmation", payment.ID)
+		return nil
 	}
 
 	// Envoyer notification de confirmation (non bloquant)
@@ -186,17 +178,6 @@ func handlePaymentCanceled(event stripe.Event) error {
 	return nil
 }
 
-// OrderDetails représente les détails d'une commande depuis order-service
-type OrderDetails struct {
-	ID     string `json:"id"`
-	UserID string `json:"userId"`
-}
-
-// UserInfo représente les informations d'un utilisateur depuis auth-service
-type UserInfo struct {
-	Email string `json:"email"`
-}
-
 // notifyOrderService notifie l'order-service du changement de statut de paiement
 func notifyOrderService(orderID, paymentID, paymentStatus string) error {
 	orderServiceURL := os.Getenv("ORDER_SERVICE_URL")
@@ -234,65 +215,6 @@ func notifyOrderService(orderID, paymentID, paymentStatus string) error {
 	}
 
 	return nil
-}
-
-// getOrderDetails récupère les détails d'une commande depuis order-service
-func getOrderDetails(orderID string) (*OrderDetails, error) {
-	orderServiceURL := os.Getenv("ORDER_SERVICE_URL")
-	if orderServiceURL == "" {
-		orderServiceURL = "http://order-service:3000"
-	}
-
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Get(orderServiceURL + "/orders/" + orderID)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("order-service returned status %d", resp.StatusCode)
-	}
-
-	var orderDetails OrderDetails
-	if err := json.NewDecoder(resp.Body).Decode(&orderDetails); err != nil {
-		return nil, err
-	}
-
-	return &orderDetails, nil
-}
-
-// getUserEmail récupère l'email d'un utilisateur depuis auth-service
-func getUserEmail(userID, tenantID string) (string, error) {
-	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
-	if authServiceURL == "" {
-		authServiceURL = "http://auth-service:8000"
-	}
-
-	client := &http.Client{Timeout: 5 * time.Second}
-	req, err := http.NewRequest("GET", authServiceURL+"/users/"+userID, nil)
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Set("X-Tenant-ID", tenantID)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("auth-service returned status %d", resp.StatusCode)
-	}
-
-	var userInfo UserInfo
-	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
-		return "", err
-	}
-
-	return userInfo.Email, nil
 }
 
 // sendOrderConfirmation envoie une notification de confirmation de commande

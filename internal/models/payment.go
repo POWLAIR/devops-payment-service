@@ -11,6 +11,8 @@ type Payment struct {
 	ID                  string    `gorm:"type:uuid;primaryKey" json:"id"`
 	TenantID            string    `gorm:"type:uuid;not null;index" json:"tenant_id"`
 	OrderID             string    `gorm:"type:uuid" json:"order_id"`
+	UserID              string    `gorm:"type:uuid" json:"user_id"`
+	UserEmail           string    `gorm:"type:varchar(255)" json:"user_email"`
 	PaymentIntentID     string    `gorm:"unique;not null" json:"payment_intent_id"`
 	Amount              float64   `gorm:"not null" json:"amount"`
 	Currency            string    `gorm:"default:eur" json:"currency"`
