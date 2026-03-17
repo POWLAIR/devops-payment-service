@@ -63,6 +63,7 @@ func CreatePaymentIntent(c *fiber.Ctx) error {
 		Currency:           req.Currency,
 		Status:             models.StatusPending,
 		PlatformCommission: commission,
+		Metadata:           "null",
 	}
 
 	if err := database.GetDB().Create(&payment).Error; err != nil {
