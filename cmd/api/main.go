@@ -70,6 +70,7 @@ func main() {
 	payments.Post("/create-intent", handlers.CreatePaymentIntent)
 	payments.Get("/", handlers.ListPayments)
 	payments.Get("/:id", handlers.GetPayment)
+	payments.Post("/:id/simulate-success", handlers.SimulatePaymentSuccess)
 
 	// Start server
 	port := os.Getenv("PORT")

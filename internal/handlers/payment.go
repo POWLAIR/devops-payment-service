@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"payment-service/internal/database"
 	"payment-service/internal/models"
 	stripeClient "payment-service/internal/stripe"
@@ -120,6 +121,60 @@ func GetPayment(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(payment)
+}
+
+// SimulatePaymentSuccess confirme manuellement un paiement simulé (mode simulation uniquement).
+// Réplique la logique du webhook payment_intent.succeeded sans passer par Stripe.
+func SimulatePaymentSuccess(c *fiber.Ctx) error {
+	if !stripeClient.IsSimulationMode() {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "This endpoint is only available in simulation mode",
+		})
+	}
+
+	paymentID := c.Params("id")
+	tenantID, _ := c.Locals("tenant_id").(string)
+
+	var payment models.Payment
+	query := database.GetDB().Where("id = ?", paymentID)
+	if tenantID != "" {
+		query = query.Where("tenant_id = ?", tenantID)
+	}
+	if err := query.First(&payment).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Payment not found",
+		})
+	}
+
+	if payment.Status == models.StatusSucceeded {
+		return c.JSON(fiber.Map{"status": payment.Status, "message": "Already succeeded"})
+	}
+
+	result := database.GetDB().Model(&models.Payment{}).
+		Where("id = ?", paymentID).
+		Updates(map[string]interface{}{
+			"status": models.StatusSucceeded,
+		})
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to update payment status",
+		})
+	}
+
+	log.Printf("✅ Simulated payment success for payment %s (order %s)", paymentID, payment.OrderID)
+
+	// Notifier l'order-service (non bloquant)
+	go func() {
+		if err := notifyOrderService(payment.OrderID, paymentID, "paid"); err != nil {
+			log.Printf("⚠️ Failed to notify order-service: %v", err)
+		}
+	}()
+
+	return c.JSON(fiber.Map{
+		"status":     models.StatusSucceeded,
+		"payment_id": paymentID,
+		"order_id":   payment.OrderID,
+	})
 }
 
 

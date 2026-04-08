@@ -13,8 +13,8 @@ import (
 	"github.com/stripe/stripe-go/v76/webhook"
 )
 
-// isSimulationMode retourne true si la clé Stripe est un placeholder
-func isSimulationMode() bool {
+// IsSimulationMode retourne true si la clé Stripe est un placeholder
+func IsSimulationMode() bool {
 	key := os.Getenv("STRIPE_SECRET_KEY")
 	return key == "" || strings.HasPrefix(key, "sk_test_example") || key == "sk_test_example"
 }
@@ -22,14 +22,14 @@ func isSimulationMode() bool {
 // InitStripe initialise le client Stripe
 func InitStripe() {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
-	if isSimulationMode() {
+	if IsSimulationMode() {
 		log.Println("⚠️  Stripe simulation mode: STRIPE_SECRET_KEY is a placeholder — payment intents will be simulated")
 	}
 }
 
 // CreatePaymentIntent crée un Payment Intent Stripe (ou simulé en dev)
 func CreatePaymentIntent(amount int64, currency, tenantID, orderID string) (*stripe.PaymentIntent, error) {
-	if isSimulationMode() {
+	if IsSimulationMode() {
 		fakeID := fmt.Sprintf("pi_sim_%s", uuid.New().String()[:16])
 		fakeSecret := fmt.Sprintf("%s_secret_%s", fakeID, uuid.New().String()[:8])
 		log.Printf("⚠️  Stripe simulation: created fake PaymentIntent %s for order %s", fakeID, orderID)
