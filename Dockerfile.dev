@@ -1,11 +1,11 @@
-FROM golang:1.21-alpine
+FROM golang:1.23-alpine
 
 WORKDIR /app
 
 RUN apk add --no-cache git wget
 
 # Installer air — outil de hot reload pour Go
-RUN go install github.com/air-verse/air@latest
+RUN go install github.com/air-verse/air@v1.52.3
 
 # Pré-télécharger les dépendances Go (mis en cache tant que go.mod ne change pas)
 # Le code source est monté via volume dans docker-compose.dev.yml
